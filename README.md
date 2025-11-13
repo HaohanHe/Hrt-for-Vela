@@ -7,7 +7,7 @@
 
 ## 项目简介
 
-Hrt位置是一个专为小米手表设计的快应用，主要功能是实时显示当前地理位置坐标和对应的网格坐标（Maidenhead Locator System）。该应用利用手表的GPS功能获取实时位置信息，并将经纬度坐标转换为业余无线电爱好者常用的网格坐标格式。
+Hrt位置（原Hamradiotools，太长了怕显示不下）是一个专为小米手表设计的快应用，主要功能是实时显示当前地理位置坐标和对应的网格坐标（Maidenhead Locator System）。该应用利用手表的GPS功能获取实时位置信息，并将经纬度坐标转换为业余无线电爱好者常用的网格坐标格式。
 
 ## 功能特性
 
@@ -105,7 +105,7 @@ src/
 - 使用 husky 进行 git hooks 管理
 - 代码提交前会自动进行格式化和语法检查
 
-
+[HamRadiotools 安卓版](https://github.com/HaohanHe/HamRadiotools/tree/main)
 
 ## 了解更多
 
