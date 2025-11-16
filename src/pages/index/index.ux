@@ -1,15 +1,17 @@
 <template>
   <div style="flex-direction: column;">
     <text style="font-size:24px;text-align:center;margin-top:10px;">{{ now }}</text>
-    <div style="flex-direction:column;justify-content:center;align-items:center;flex:1;">
-      <text style="font-size:64px;font-weight:bold;margin-bottom:8px;">{{ grid }}</text>
-      <text style="font-size:28px;color:#666666;margin-bottom:12px;">{{ lat }}, {{ lon }}</text>
-    </div>
+  <div style="flex-direction:column;justify-content:center;align-items:center;flex:1;">
+    <text style="font-size:64px;font-weight:bold;margin-bottom:8px;">{{ grid }}</text>
+    <text style="font-size:28px;color:#666666;margin-bottom:12px;">{{ lat }}, {{ lon }}</text>
+    <text style="font-size:20px;color:#999999;">{{ weakSignal ? '卫星信号弱，请到开阔地带' : (locating ? '定位中…' : err) }}</text>
+  </div>
   </div>
   </template>
 
 <script>
 import geolocation from "@system.geolocation"
+import brightness from "@system.brightness"
 
 function index2Char(idx) {
   return String.fromCharCode("A".charCodeAt(0) + idx)
@@ -36,11 +38,14 @@ export default {
     grid: "--",
     timerClock: 0,
     timerLocation: 0,
+    timerWeakSignal: 0,
     gcCounter: 0,
     active: true,
     locating: false,
     retry: 0,
-    subscribed: false
+    subscribed: false,
+    err: "",
+    weakSignal: false
   },
   initGeo() {
     if (!geolocation || typeof geolocation.subscribe !== "function") return
@@ -61,9 +66,10 @@ export default {
             this.grid = newGrid
           }
           this.retry = 0
+          this.err = ""
         }
       },
-      fail: () => { this.retry++ }
+      fail: e => { this.retry++; this.err = this.mapGeoError(e) }
     })
     this.subscribed = true
   },
@@ -78,10 +84,15 @@ export default {
     this.updateTime()
     setTimeout(() => this.initGeo(), 300)
     this.startTimers()
+    this.scheduleWeakSignal()
+    this.refresh()
   },
   onShow() {
     this.active = true
     this.startTimers()
+    if (brightness && typeof brightness.setKeepScreenOn === "function") {
+      brightness.setKeepScreenOn({ keepScreenOn: true })
+    }
   },
   onHide() {
     this.active = false
@@ -106,7 +117,6 @@ export default {
       return
     }
     geolocation.getLocation({
-      timeout: 2000,
       success: data => {
         const lat = Number(data.latitude)
         const lon = Number(data.longitude)
@@ -121,18 +131,36 @@ export default {
             this.grid = newGrid
           }
           this.retry = 0
+          this.err = ""
+          this.weakSignal = false
         }
         this.gcCounter++
         if (this.gcCounter % 60 === 0 && global && typeof global.runGC === "function") {
           global.runGC()
         }
       },
-      fail: () => { this.retry++ },
+      fail: e => { this.retry++; this.err = this.mapGeoError(e) },
       complete: () => {
         this.locating = false
         this.scheduleLocation()
       }
     })
+  },
+  scheduleWeakSignal() {
+    if (this.timerWeakSignal) { clearTimeout(this.timerWeakSignal); this.timerWeakSignal = 0 }
+    this.weakSignal = false
+    this.timerWeakSignal = setTimeout(() => {
+      const noFix = (this.lat === "--" || this.lon === "--")
+      if (noFix) { this.weakSignal = true; this.err = "卫星信号弱，请到开阔地带" }
+    }, 15000)
+  },
+  mapGeoError(e) {
+    const c = e && typeof e.code === "number" ? e.code : null
+    if (c === 203) return "设备不支持定位"
+    if (c === 204) return "定位超时"
+    if (c === 400) return "定位权限被拒绝"
+    if (c === 402) return "未声明定位权限"
+    return c ? `定位失败(${c})` : "定位失败"
   },
   startTimers() {
     if (!this.timerClock) this.timerClock = setInterval(() => this.updateTime(), 1000)
@@ -140,6 +168,7 @@ export default {
   stopTimers() {
     if (this.timerClock) { clearInterval(this.timerClock); this.timerClock = 0 }
     if (this.timerLocation) { clearTimeout(this.timerLocation); this.timerLocation = 0 }
+    if (this.timerWeakSignal) { clearTimeout(this.timerWeakSignal); this.timerWeakSignal = 0 }
     if (typeof this.unsubscribeGeo === "function") this.unsubscribeGeo()
   },
   scheduleLocation() {

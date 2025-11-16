@@ -3,7 +3,7 @@
   "name": "Hrt位置",
   "versionName": "1.0.2",
   "versionCode": 3,
-  "minPlatformVersion": 1000,
+  "minAPILevel": 1,
   "icon": "/common/logo.png",
   "deviceTypeList": [
     "watch"
@@ -14,6 +14,14 @@
     },
     {
       "name": "system.geolocation"
+    },
+    {
+      "name": "system.brightness"
+    }
+  ],
+  "permissions": [
+    {
+      "name": "hapjs.permission.LOCATION"
     }
   ],
   "config": {
