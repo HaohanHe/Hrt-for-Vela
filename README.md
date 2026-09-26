@@ -11,7 +11,7 @@
 Hrt位置 是一款跑在小米手表 Vela 快应用平台上的小程序。手表戴在手上、天线在杆子上，
 低头扫一眼手腕就能看到自己当前的 6 位梅登黑德网格号、经纬度和时间，不用掏手机。
 它是 Android 端 [HamRadiotools](https://github.com/HaohanHe/HamRadiotools) 的手表端
-配套，原名太长怕手表屏显示不下，所以缩成了 Hrt。
+配套；Hrt 取自 Ham Radio Tools 的首字母（包名 `com.Hamradiotools.watch.vela`）。
 
 ### 它做什么
 
@@ -20,7 +20,9 @@ Hrt位置 是一款跑在小米手表 Vela 快应用平台上的小程序。手�
 - 时间、经纬度（小数点后 5 位）作为辅助信息放在下方。
 - 定位失败或 15 秒内拿不到坐标时，屏幕提示"卫星信号弱，请到开阔地带"。
 - 前台运行时保持屏幕常亮，方便架台时瞄一眼。
-- 应用内自带中文 / 英文两套语言资源（`src/i18n/zh-CN.json`、`src/i18n/en.json`）。
+- 界面文字目前只有中文。`src/i18n/` 下的三个 JSON 是工程模板自带的示例文件
+  （内容还是 `{"a":{"b":"hello"}}` 这种占位），页面代码没有引用它们，不代表
+  应用已经支持多语言。
 
 ### 实际实现细节
 
@@ -30,8 +32,9 @@ Hrt位置 是一款跑在小米手表 Vela 快应用平台上的小程序。手�
 - 经纬坐标只有在字符串发生变化时才重算网格，避免无意义刷新。
 - 错误码按 Vela 文档映射成中文提示：203 设备不支持定位、204 定位超时、
   400 权限被拒、402 未声明定位权限。
-- 每成功取到 60 次位置会手动调一次 `global.runGC()` 触发 GC，控制手表上的内存占用。
-- `onHide` / `onDestroy` 里停掉定时器并退订定位，省电。
+- 每 60 次 `getLocation` 成功会手动调一次 `global.runGC()` 触发 GC，控制手表上的
+  内存占用（订阅回调不计入这个计数）。
+- `onHide` / `onDestroy` 里停掉时钟、轮询定时器并退订定位，省电。
 
 ### 技术栈
 
@@ -50,14 +53,14 @@ Hrt位置 是一款跑在小米手表 Vela 快应用平台上的小程序。手�
 ```
 src/
 ├── app.ux              # 应用入口
-├── config-watch.json    # 手表端配置
+├── config-watch.json    # 空的占位配置
 ├── manifest.json       # 快应用清单（包名 / 权限 / 路由）
 ├── common/
 │   └── logo.png        # 应用图标
-├── i18n/
-│   ├── defaults.json    # 默认语言
-│   ├── en.json         # 英文
-│   └── zh-CN.json      # 简体中文
+├── i18n/                # 模板自带的示例语言文件，页面未引用
+│   ├── defaults.json
+│   ├── en.json
+│   └── zh-CN.json
 └── pages/
     ├── index/
     │   └── index.ux    # 主页面：时钟 + 网格 + 经纬度
@@ -110,7 +113,8 @@ Hrt位置 は Xiaomi スマートウォッチの Vela クイックアプリ（�
 向けの小さなアプリです。アンテナを上げた現場で、スマホを取り出さなくても手首を
 見るだけで 6 桁メイデンヘッド・ロケータ、緯度経度、時刻が確認できます。Android
 版 [HamRadiotools](https://github.com/HaohanHe/HamRadiotools) のウォッチ側
-コンパニオンで、名前が長すぎて腕時計の画面に入らないため Hrt と短縮しました。
+コンパニオンです。Hrt は Ham Radio Tools の頭文字です（パッケージ名は
+`com.Hamradiotools.watch.vela`）。
 
 ### できること
 
@@ -122,8 +126,9 @@ Hrt位置 は Xiaomi スマートウォッチの Vela クイックアプリ（�
   良い場所へ移動してください」と画面に出します。
 - フォアグラウンドで動いている間は画面を常時点灯させ、運用中に一目で見られる
   ようにします。
-- アプリ内リソースは中国語 / 英語の 2 か国語（`src/i18n/zh-CN.json`、
-  `src/i18n/en.json`）を同梱しています。
+- UI の文言は今のところ中国語のみです。`src/i18n/` の3つの JSON はテンプレート
+  付属のサンプルで（中身は `{"a":{"b":"hello"}}` というプレースホルダ）、
+  ページからは参照されていません。多言語対応済みという意味ではありません。
 
 ### 実装メモ
 
@@ -133,11 +138,12 @@ Hrt位置 は Xiaomi スマートウォッチの Vela クイックアプリ（�
   座標が取れたらリトライカウンタをリセットします。
 - 緯度経度の文字列が変わったときだけロケータを再計算し、無駄な描画を避けて
   います。
-- Vela のエラーコードは日本語 README 上ではそのまま記載します：203 端末が測位
-  非対応、204 測位タイムアウト、400 権限拒否、402 測位権限未宣言。
-- 60 回位置が取れるごとに `global.runGC()` を手動で呼び、ウォッチ上のメモリ
-  使用を抑えます。
-- `onHide` / `onDestroy` でタイマーと測位購読を止め、電池を節約します。
+- Vela のエラーコードをメッセージに対応付けています：203 端末が測位非対応、
+  204 測位タイムアウト、400 権限拒否、402 測位権限未宣言。
+- `getLocation` が60回成功するごとに `global.runGC()` を手動で呼び、ウォッチ上
+  のメモリ使用を抑えます（購読コールバックはこの数に含めません）。
+- `onHide` / `onDestroy` で時計とポーリングのタイマーを止め、測位購読を解除
+  して電池を節約します。
 
 ### 技術構成
 
@@ -157,14 +163,14 @@ Hrt位置 は Xiaomi スマートウォッチの Vela クイックアプリ（�
 ```
 src/
 ├── app.ux              # アプリエントリ
-├── config-watch.json    # ウォッチ設定
+├── config-watch.json    # 空のプレースホルダ設定
 ├── manifest.json       # クイックアプリ定義（パッケージ名 / 権限 / ルート）
 ├── common/
 │   └── logo.png        # アイコン
-├── i18n/
-│   ├── defaults.json    # デフォルト言語
-│   ├── en.json         # 英語
-│   └── zh-CN.json      # 簡体字中国語
+├── i18n/                # テンプレート付属のサンプル、ページから未参照
+│   ├── defaults.json
+│   ├── en.json
+│   └── zh-CN.json
 └── pages/
     ├── index/
     │   └── index.ux    # メイン画面：時計 + ロケータ + 緯度経度
@@ -220,8 +226,8 @@ Hrt位置 is a small quick app for Xiaomi watches running the Vela platform. Wit
 the rig already in the field, you can glance at your wrist instead of pulling
 out the phone: it shows your current 6-character Maidenhead locator, lat/lon,
 and the time. It is the watch companion to the Android app
-[HamRadiotools](https://github.com/HaohanHe/HamRadiotools). The original name
-was too long to fit on a watch screen, so it was shortened to Hrt.
+[HamRadiotools](https://github.com/HaohanHe/HamRadiotools). Hrt is short
+for Ham Radio Tools (package name `com.Hamradiotools.watch.vela`).
 
 ### What it does
 
@@ -233,8 +239,10 @@ was too long to fit on a watch screen, so it was shortened to Hrt.
   "weak satellite signal, move to open sky" message.
 - Keeps the screen on while in the foreground so you can read it without
   tapping, which matters while adjusting an antenna.
-- In-app resources ship in Chinese and English (`src/i18n/zh-CN.json`,
-  `src/i18n/en.json`).
+- The UI text is Chinese only for now. The three JSON files under
+  `src/i18n/` came with the project template (they still hold
+  `{"a":{"b":"hello"}}` placeholders) and no page imports them, so they do
+  not mean the app is localized.
 
 ### Implementation notes
 
@@ -247,10 +255,11 @@ was too long to fit on a watch screen, so it was shortened to Hrt.
 - Vela error codes are mapped to readable messages: 203 device does not
   support location, 204 location timeout, 400 permission denied,
   402 location permission not declared.
-- Every 60 successful fixes the code calls `global.runGC()` to keep memory
-  pressure low on the watch.
-- `onHide` / `onDestroy` stop timers and unsubscribe from location to save
-  battery.
+- Every 60 successful `getLocation` calls the code calls `global.runGC()` to
+  keep memory pressure low on the watch (subscribe callbacks are not
+  counted).
+- `onHide` / `onDestroy` stop the clock and polling timers and unsubscribe
+  from location to save battery.
 
 ### Stack
 
@@ -271,14 +280,14 @@ was too long to fit on a watch screen, so it was shortened to Hrt.
 ```
 src/
 ├── app.ux              # app entry
-├── config-watch.json    # watch-side config
+├── config-watch.json    # empty placeholder config
 ├── manifest.json       # quick app manifest (package / permissions / routes)
 ├── common/
 │   └── logo.png        # app icon
-├── i18n/
-│   ├── defaults.json    # default language
-│   ├── en.json         # English
-│   └── zh-CN.json      # Simplified Chinese
+├── i18n/                # template sample files, not referenced by pages
+│   ├── defaults.json
+│   ├── en.json
+│   └── zh-CN.json
 └── pages/
     ├── index/
     │   └── index.ux    # main screen: clock + locator + lat/lon
